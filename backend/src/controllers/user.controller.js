@@ -1,7 +1,8 @@
 const asyncHandler = require('../utils/asyncHandler');
 const User = require('../models/user.model');
 const uploadToCloudinary = require('../utils/cloudinary');
-const registerUser=asyncHandler(async (req, res) =>{
+const jwt = require('jsonwebtoken');
+    const registerUser=asyncHandler(async (req, res) =>{
    // get user data from request body
    // validation of user data
    // check if user already exists : username ,email
@@ -44,7 +45,7 @@ const registerUser=asyncHandler(async (req, res) =>{
     }
     return res.status(201).json({message: 'User created successfully', user: createdUser});
 
-});
+    });
 
     const loginUser = asyncHandler(async (req, res) => {
         const {email, password} = req.body;
@@ -86,4 +87,73 @@ const registerUser=asyncHandler(async (req, res) =>{
         return res.status(200).json({message: 'Logout successful'});
     })
 
-    module.exports = {registerUser, loginUser, logoutUser};
+    
+    
+    const refreshToken = asyncHandler(async (req, res) => {
+    try {
+        const incomingRefreshToken = req.cookies.refreshToken;
+
+        if (!incomingRefreshToken) {
+            return res.status(401).json({
+                message: "Refresh token is required"
+            });
+        }
+
+        const decodedToken = jwt.verify(
+            incomingRefreshToken,
+            process.env.JWT_REFRESH_SECRET
+        );
+
+        const user = await User.findById(decodedToken._id);
+
+        if (!user) {
+            return res.status(401).json({
+                message: "Invalid refresh token"
+            });
+        }
+
+        if (incomingRefreshToken !== user.refreshToken) {
+            return res.status(401).json({
+                message: "Invalid or revoked refresh token"
+            });
+        }
+
+        const newAccessToken = user.generateAccessToken();
+        const newRefreshToken = user.generateRefreshToken();
+
+        user.refreshToken = newRefreshToken;
+
+        await user.save({
+            validateBeforeSave: false
+        });
+
+        const options = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict"
+        };
+
+        res.cookie("accessToken", newAccessToken, {
+            ...options,
+            maxAge: 15 * 60 * 1000
+        });
+
+        res.cookie("refreshToken", newRefreshToken, {
+            ...options,
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
+
+        return res.status(200).json({
+            message: "Access token refreshed successfully"
+        });
+
+    } catch (error) {
+        console.error("Refresh token error:", error);
+
+        return res.status(401).json({
+            message: "Invalid or expired refresh token"
+        });
+    }
+});
+
+module.exports = {registerUser, loginUser, logoutUser, refreshToken};
