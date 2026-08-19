@@ -87,12 +87,12 @@ const jwt = require('jsonwebtoken');
         return res.status(200).json({message: 'Logout successful'});
     })
 
-    
+     
     
     const refreshToken = asyncHandler(async (req, res) => {
     try {
-        const incomingRefreshToken = req.cookies.refreshToken;
-
+        const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
+ 
         if (!incomingRefreshToken) {
             return res.status(401).json({
                 message: "Refresh token is required"
@@ -104,7 +104,7 @@ const jwt = require('jsonwebtoken');
             process.env.JWT_REFRESH_SECRET
         );
 
-        const user = await User.findById(decodedToken._id);
+        const user = await User.findById(decodedToken?._id);
 
         if (!user) {
             return res.status(401).json({
@@ -112,9 +112,9 @@ const jwt = require('jsonwebtoken');
             });
         }
 
-        if (incomingRefreshToken !== user.refreshToken) {
+        if (incomingRefreshToken !== user?.refreshToken) {
             return res.status(401).json({
-                message: "Invalid or revoked refresh token"
+                message: "Refresh token is expired or does not match"
             });
         }
 
