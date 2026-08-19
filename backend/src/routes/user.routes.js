@@ -6,6 +6,7 @@ const {verifyJWT} = require('../middlewares/auth.middleware.js');
 const {logoutUser} = require('../controllers/user.controller.js');
 const upload = require('../middlewares/multer.middleware.js');
 const {refreshToken} = require('../controllers/user.controller.js');
+const{changePassword, getCurrentUser,updateAccountDetails} = require('../controllers/user.controller.js');
 router.post('/register', upload.fields(
     [
         { name: 'avatar', maxCount: 1 }, 
@@ -15,5 +16,8 @@ router.post('/register', upload.fields(
 router.post('/login', loginUser); // route for user login
 router.post('/logout', verifyJWT, logoutUser); // route for user logout, protected by JWT verification middleware
 router.post('/refresh-token', refreshToken); // route for refreshing JWT tokens
+router.post('/update-password', verifyJWT, changePassword); // route for updating user password, protected by JWT verification middleware
+router.get('/current-user', verifyJWT, getCurrentUser); // route for getting current user profile, protected by JWT verification middleware
+router.put('/update-account', verifyJWT, updateAccountDetails); // route for updating user account details, protected by JWT verification middleware
 
 module.exports = router;
