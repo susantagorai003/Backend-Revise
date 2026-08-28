@@ -32,4 +32,21 @@ const uploadOnCloudinary = async (localFilePath) => {
     }
 };
 
+const deleteFromCloudinary = async (fileUrl) => {
+    if (!fileUrl) return null;
+
+    const uploadPath = new URL(fileUrl).pathname.split('/upload/')[1];
+    if (!uploadPath) return null;
+
+    const publicId = uploadPath
+        .replace(/^v\d+\//, '')
+        .replace(/\.[^/.]+$/, '');
+
+    return cloudinary.uploader.destroy(publicId, {
+        resource_type: "image"
+    });
+};
+
+uploadOnCloudinary.deleteFromCloudinary = deleteFromCloudinary;
+
 module.exports = uploadOnCloudinary;
