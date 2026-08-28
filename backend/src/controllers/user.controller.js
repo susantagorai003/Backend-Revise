@@ -2,6 +2,8 @@ const asyncHandler = require('../utils/asyncHandler');
 const User = require('../models/user.model');
 const uploadToCloudinary = require('../utils/cloudinary');
 const jwt = require('jsonwebtoken');
+const deleteAvatar = require('../utils/deleteAvatar');
+const deleteCoverImage = require('../utils/deleteCoverImage');
     const registerUser=asyncHandler(async (req, res) =>{
    // get user data from request body
    // validation of user data
@@ -207,10 +209,14 @@ const jwt = require('jsonwebtoken');
             return res.status(400).json({message: 'Avatar is required'});
         }
         const avatar = await uploadToCloudinary(avatarLocalPath);
-        if(!avatar.url) {
+        if(!avatar?.url) {
             return res.status(500).json({message: 'Error uploading avatar'});
         }
+        const previousAvatar = user.avatar;
         user.avatar = avatar.url;
+        if(previousAvatar) {
+            await deleteAvatar(previousAvatar);
+        }
         await user.save({validateBeforeSave: false});
         return res.status(200).json({message: 'Avatar updated successfully'});
     })
@@ -225,10 +231,14 @@ const jwt = require('jsonwebtoken');
             return res.status(400).json({message: 'Cover image is required'});
         }
         const coverImage = await uploadToCloudinary(coverImageLocalPath);
-        if(!coverImage.url) {
+        if(!coverImage?.url) {
             return res.status(500).json({message: 'Error uploading cover image'});
         }
+        const previousCoverImage = user.coverImage;
         user.coverImage = coverImage.url;
+        if(previousCoverImage) {
+            await deleteCoverImage(previousCoverImage);
+        }
         await user.save({validateBeforeSave: false});
         return res.status(200).json({message: 'Cover image updated successfully'});
     })
